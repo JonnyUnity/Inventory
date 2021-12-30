@@ -13,18 +13,30 @@ public class Inventory : MonoBehaviour
         TestItem();
     }
 
+
     public void TestItem()
     {
-        
-        
-        Item item = ItemDatabase.GetRandomItem();
         var rand = new Random();
-        int inventoryIndex = rand.Next(1, CharacterItems.Length);
 
-        CharacterItems[inventoryIndex] = item;
+        for (int i = 0; i < 5; i++)
+        {
+            Item item = ItemDatabase.GetRandomItem();
 
+            int inventoryIndex = 0;
+            do
+            {
+                inventoryIndex = rand.Next(1, CharacterItems.Length);
+                Debug.Log(i + " - " + inventoryIndex);
+
+            } while (CharacterItems[inventoryIndex] != null);
+        
+            CharacterItems[inventoryIndex] = item;
+
+        }
+        
         DebugInventory();
     }
+
 
     public void DebugInventory()
     {
