@@ -7,6 +7,7 @@ public class Inventory : MonoBehaviour
 {
     public Item[] CharacterItems = new Item[15];
     public ItemDatabase ItemDatabase;
+    public UIInventory InventoryUI;
 
     public void Start()
     {
@@ -31,10 +32,30 @@ public class Inventory : MonoBehaviour
             } while (CharacterItems[inventoryIndex] != null);
         
             CharacterItems[inventoryIndex] = item;
+            InventoryUI.AddNewItem(inventoryIndex, item);
 
         }
         
         DebugInventory();
+    }
+
+
+    public void RemoveItem(int index)
+    {
+        CharacterItems[index] = null;
+        InventoryUI.RemoveItem(index);
+    }
+
+
+    public void SwapItems(int fromIndex, int toIndex)
+    {
+        var temp = CharacterItems[toIndex];
+        CharacterItems[toIndex] = CharacterItems[fromIndex];
+
+        InventoryUI.UpdateSlot(toIndex, CharacterItems[fromIndex]);
+        
+        CharacterItems[fromIndex] = temp;
+        InventoryUI.UpdateSlot(fromIndex, temp);
     }
 
 
