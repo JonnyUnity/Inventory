@@ -27,9 +27,10 @@ public class UIItem : MonoBehaviour
             SpriteImage.color = Color.white;
             SpriteImage.sprite = item.Icon;
         }
-
     }
 
-
-
+    public void MarkAsSelected()
+    {
+        SpriteImage.color = new Color(SpriteImage.color.r, SpriteImage.color.g, SpriteImage.color.b, 0.5f);
+    }
 }
