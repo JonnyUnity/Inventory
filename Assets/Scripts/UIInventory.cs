@@ -11,9 +11,6 @@ public class UIInventory : MonoBehaviour
     public int SelectedSlot = 0;
     public TMPro.TextMeshProUGUI ItemText;
 
-    private bool IsPickedUp;
-    private int PickedUpSlot;
-
 
     public void Awake()
     {
@@ -23,21 +20,12 @@ public class UIInventory : MonoBehaviour
     }
 
 
-    public void Update()
-    {
-
-        
-
-
-     
-    }
-
-    public void SetSelected(int slot)
+    public void SetSelected(int slot, bool isPickedUp)
     {
 
         SelectedSlot = slot;
         SelectedItem.transform.position = Items[SelectedSlot].transform.position;
-        UpdateItemText(slot);
+        if (!isPickedUp) UpdateItemText(slot);
     }
 
 
@@ -80,7 +68,6 @@ public class UIInventory : MonoBehaviour
     {
         UpdateSlot(slot, item);
     }
-
 
 
     public void RemoveItem(int slot)

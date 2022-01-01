@@ -11,14 +11,40 @@ public class Inventory : MonoBehaviour
     public ItemDatabase ItemDatabase;
     public UIInventory InventoryUI;
 
-    public int SelectedSlot;
-    public int PickedUpSlot;
+    private int SelectedSlot;
+    private int PickedUpSlot;
     private bool IsPickedUp;
 
     private int currRow = 0;
     private int currCol = 0;
     private readonly int totalRows = 3;
     private readonly int totalCols = 6;
+
+    private readonly List<(int, int)> Resolutions = new() { (1280, 720), (1920, 1080), (3860, 2160) };
+    private int ResolutionIndex = 1;
+    
+    private Controls Controls;
+    private Vector2 Move;
+    private bool SelectionMoving;
+
+
+    public void Awake()
+    {
+        Controls = new Controls();
+
+        Controls.Map.PickupPutdown.performed += ctx => OnPickup();
+
+        Controls.Map.ResolutionUp.performed += ctx => OnResolutionUp();
+        Controls.Map.ResolutionDown.performed += ctx => OnResolutionDown();
+
+        Controls.Map.RemoveRestart.performed += ctx => OnRemoveRestart();
+
+        Controls.Map.Move.performed += ctx => Move = ctx.ReadValue<Vector2>();
+        Controls.Map.Move.canceled += ctx => Move = Vector2.zero;
+
+        Controls.Enable();
+
+    }
 
 
     public void Start()
@@ -42,7 +68,7 @@ public class Inventory : MonoBehaviour
             do
             {
                 inventoryIndex = rand.Next(0, CharacterItems.Length);
-                Debug.Log(i + " - " + inventoryIndex);
+                //Debug.Log(i + " - " + inventoryIndex);
 
             } while (CharacterItems[inventoryIndex] != null);
         
@@ -51,78 +77,89 @@ public class Inventory : MonoBehaviour
 
         }
 
-        InventoryUI.SetSelected(0);
+        SelectedSlot = 0;
+        InventoryUI.SetSelected(SelectedSlot, IsPickedUp);
+        IsPickedUp = false;
         //DebugInventory();
+    }
+
+
+    public void OnPickup()
+    {
+        if (IsPickedUp)
+        {
+            // drop picked item
+            SwapItems(PickedUpSlot, SelectedSlot);
+            IsPickedUp = false;
+        }
+        else if (CharacterItems[SelectedSlot] != null)
+        {
+            // pick item
+            PickedUpSlot = SelectedSlot;
+            IsPickedUp = true;
+            InventoryUI.PickSlot(SelectedSlot);
+        }
+    }
+
+
+    public void OnRemoveRestart()
+    {
+        // Remove item from inventory
+        if (IsPickedUp)
+        {
+            RemoveItem(PickedUpSlot);
+            PickedUpSlot = -1;
+            IsPickedUp = false;
+        }
+        else
+        {
+            InventoryUI.ClearInventory();
+            PopulateInventory();
+        }
     }
 
 
     public void Update()
     {
+
         int rowChange = 0;
         int colChange = 0;
 
-        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            colChange = -1;
-            rowChange = 0;
-        }
-        else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
-        {
-            colChange = 0;
-            rowChange = 1;
-        }
-        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            colChange = 1;
-            rowChange = 0;
-        }
-        else if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
-        {
-            colChange = 0;
-            rowChange = -1;
-        }
+        Vector2 m = new Vector2(Move.x, Move.y);
 
-        if (Mathf.Abs(rowChange) != 0 || Mathf.Abs(colChange) != 0)
+        if (!SelectionMoving)
         {
-            ChangeSelected(rowChange, colChange);
-        }
-
-        // Pick item
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            if (IsPickedUp)
+            if (m == Vector2.up)
             {
-                // drop picked item
-                Debug.Log("Drop picked item!");
-                SwapItems(PickedUpSlot, SelectedSlot);
-                //InventoryUI.UnpickSlot();
-                IsPickedUp = false;
+                rowChange = -1;
+                colChange = 0;
             }
-            else if (CharacterItems[SelectedSlot] != null)
+            else if (m == Vector2.down)
             {
-                // pick item
-                PickedUpSlot = SelectedSlot;
-                IsPickedUp = true;
-                InventoryUI.PickSlot(SelectedSlot);
+                rowChange = 1;
+                colChange = 0;
+            }
+            else if (m == Vector2.left)
+            {
+                rowChange = 0;
+                colChange = -1;
+            }
+            else if (m == Vector2.right)
+            {
+                rowChange = 0;
+                colChange = 1;
+            }
+
+            if (Mathf.Abs(rowChange) != 0 || Mathf.Abs(colChange) != 0)
+            {
+                SelectionMoving = true;
+                ChangeSelected(rowChange, colChange);
             }
         }
 
-
-        if (Input.GetKeyDown(KeyCode.R))
+        if (m == Vector2.zero)
         {
-            // Remove item from inventory
-            if (IsPickedUp)
-            {
-                RemoveItem(PickedUpSlot);
-                PickedUpSlot = -1;
-                IsPickedUp = false;
-            }
-            else
-            {
-                InventoryUI.ClearInventory();
-                PopulateInventory();
-            }
-
+            SelectionMoving = false;
         }
     }
 
@@ -150,22 +187,16 @@ public class Inventory : MonoBehaviour
 
         SelectedSlot = (currRow * totalCols) + currCol;
 
-        InventoryUI.SetSelected(SelectedSlot);
+        InventoryUI.SetSelected(SelectedSlot, IsPickedUp);
 
     }
 
-
-    public void MoveItem(int oldSlot, int newSlot)
-    {
-
-    }
 
     public void RemoveItem(int index)
     {
         CharacterItems[index] = null;
         InventoryUI.RemoveItem(index);
     }
-
 
 
     public void SwapItems(int fromSlot, int toSlot)
@@ -176,6 +207,27 @@ public class Inventory : MonoBehaviour
         CharacterItems[toSlot] = CharacterItems[fromSlot];
         CharacterItems[fromSlot] = temp;
 
+    }
+
+
+
+    private void ChangeResolution()
+    {
+        var res = Resolutions[ResolutionIndex];
+        Screen.SetResolution(res.Item1, res.Item2, FullScreenMode.MaximizedWindow);
+    }
+
+    private void OnResolutionDown()
+    {
+        ResolutionIndex = Mathf.Max(0, ResolutionIndex - 1);
+        ChangeResolution();
+    }
+
+
+    private void OnResolutionUp()
+    {
+        ResolutionIndex = (ResolutionIndex + 1) % Resolutions.Count;
+        ChangeResolution();
     }
 
 
